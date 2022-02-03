@@ -9,6 +9,8 @@ import (
 
 	"github.com/arun6783/go-grpc-demo/calculator/calculatorpb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -25,7 +27,42 @@ func main() {
 
 	//doCalculation(c)
 
-	doBiDirectionalStream(c)
+	//doBiDirectionalStream(c)
+
+	doErrorUnary(c)
+}
+
+func doErrorUnary(c calculatorpb.CalculatorServiceClient) {
+	calculateSquareRoot(10, c)
+	calculateSquareRoot(-10, c)
+}
+
+func calculateSquareRoot(num int32, c calculatorpb.CalculatorServiceClient) {
+	fmt.Printf("doErrorUnary client method was called with %v \n\n", num)
+
+	req := &calculatorpb.SquareRootRequest{
+		Number: num,
+	}
+	res, err := c.SquareRoot(context.Background(), req)
+
+	if err != nil {
+
+		respErr, ok := status.FromError(err)
+
+		if ok {
+			//actual error after parsing to grpc error
+
+			fmt.Println(respErr.Code())
+			fmt.Println(respErr.Message())
+			if respErr.Code() == codes.InvalidArgument {
+				fmt.Printf("we probably sent a negative number!!\n")
+			}
+		} else {
+			log.Fatalf("Big error calling square root %v\n", err)
+		}
+	}
+
+	fmt.Printf("square root of %v is  %v\n", num, res)
 }
 
 func doBiDirectionalStream(c calculatorpb.CalculatorServiceClient) {
