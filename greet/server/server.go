@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -17,7 +18,7 @@ type server struct {
 }
 
 func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.GreetResponse, error) {
-	fmt.Printf(fmt.Sprintf("Greet function was invoked with %v\n", req))
+	fmt.Printf("Greet function was invoked with %v\n", req)
 
 	firstName := req.GetGreeting().GetFirstName()
 	result := "Hello" + firstName
@@ -28,7 +29,7 @@ func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.G
 }
 
 func (*server) GreetManyTimes(req *greetpb.GreetManyTimesRequest, stream greetpb.GreetService_GreetManyTimesServer) error {
-	fmt.Printf(fmt.Sprintf("Greetmultiple function was invoked with %v\n", req))
+	fmt.Printf("Greetmultiple function was invoked with %v\n", req)
 
 	firstName := req.GetGreeting().GetFirstName()
 
@@ -47,9 +48,61 @@ func (*server) GreetManyTimes(req *greetpb.GreetManyTimesRequest, stream greetpb
 
 }
 
+func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
+	fmt.Printf("Longgreet function was invoked with a streaming request\n")
+	result := ""
+	for {
+
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&greetpb.LongGreetResponse{
+				Result: result,
+			})
+		}
+
+		if err != nil {
+			log.Fatalf("error when reading client stream %v\n", err)
+		}
+		firstName := req.GetGreeting().GetFirstName()
+		result += "Hello " + firstName + " !"
+
+	}
+}
+
+func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) error {
+	fmt.Printf("Greeteveryone function was invoked with a streaming request\n")
+
+	for {
+		req, err := stream.Recv()
+
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			log.Fatalf("Error while reading client steram %v\n", err)
+			return err
+		}
+
+		firstName := req.GetGreeting().GetFirstName()
+
+		result := "Hello " + firstName + " !"
+
+		sendErr := stream.Send(&greetpb.GreetEveryoneResponse{
+			Result: result,
+		})
+		if sendErr != nil {
+
+			log.Fatalf("Error occured when sending stream to client %v\n", sendErr)
+			return sendErr
+		}
+
+	}
+
+}
+
 func main() {
 
-	fmt.Println("Hello world!! inside greet server .go\n")
+	fmt.Print("Hello world!! inside greet server .go\n")
 
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 

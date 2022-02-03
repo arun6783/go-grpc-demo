@@ -1,0 +1,5 @@
+make.exe --dry-run --always-make --keep-going --print-directory
+make: Entering directory 'c:/GoProjects/src/github.com/arun6783/go-grpc-demo'
+echo "hello world"
+make: Leaving directory 'c:/GoProjects/src/github.com/arun6783/go-grpc-demo'
+ 
