@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 
@@ -16,6 +17,8 @@ type server struct {
 }
 
 func (*server) Calculate(ctx context.Context, req *calculatorpb.CalculatorRequest) (*calculatorpb.CalculatorResponse, error) {
+
+	fmt.Printf("Calculate server was called with req:%v", req)
 	operator := req.GetOperation()
 	if operator == calculatorpb.Operation_OPERATOR_UNKNOWN {
 		return nil, errors.New("invalid operator")
@@ -30,6 +33,38 @@ func (*server) Calculate(ctx context.Context, req *calculatorpb.CalculatorReques
 	return &calculatorpb.CalculatorResponse{
 		Result: float64(res),
 	}, nil
+}
+
+func (*server) FindMaximum(stream calculatorpb.CalculatorService_FindMaximumServer) error {
+
+	fmt.Printf("FindMaximum server was called with stream")
+	var prev int32 = 0
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+
+			log.Fatalf("Error occured when receiving stream%v\n", err)
+			return err
+		}
+
+		current := req.GetNumber_1()
+
+		if current > prev {
+			sendErr := stream.Send(&calculatorpb.FindMaximumReponse{
+				Result: current,
+			})
+
+			if sendErr != nil {
+				log.Fatalf("Error occured when sending stream %v\n", sendErr)
+				return sendErr
+			}
+		}
+
+		prev = current
+	}
 }
 
 func main() {

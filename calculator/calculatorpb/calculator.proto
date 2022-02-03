@@ -6,8 +6,16 @@ option go_package ="calculator/calculatorpb";
 service CalculatorService{
     rpc Calculate(CalculatorRequest) returns (CalculatorResponse);
     rpc ComputeAverage(stream ComputeAverageRequest) returns (ComputeAverageResponse);
+
+    rpc FindMaximum(stream FindMaximumRequest) returns(stream FindMaximumReponse){};
 }
 
+message FindMaximumRequest{
+    int32 number_1 =1;
+}
+message FindMaximumReponse{
+    int32 result =1;
+}
 
 message ComputeAverageRequest{
     int32 number_1 =1;
