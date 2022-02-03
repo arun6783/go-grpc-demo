@@ -63,7 +63,7 @@ func doBiDirectionalStream(c calculatorpb.CalculatorServiceClient) {
 	go func() {
 		for _, req := range requests {
 
-			log.Print("sending message to server %v", req)
+			log.Printf("sending message to server %v", req)
 			stream.Send(req)
 			time.Sleep(1000 * time.Millisecond)
 		}
