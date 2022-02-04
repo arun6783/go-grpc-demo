@@ -26,8 +26,24 @@ func main() {
 	//postBlog(c)
 	//readBlog(c, "61fd6ef6318a346e9ae3ce84")
 
-	updateBlog(c)
+	//updateBlog(c)
 
+	deleteBlog(c, "61fd6ef6318a346e9ae3ce84")
+}
+
+func deleteBlog(c blogpb.BlogServiceClient, blogId string) {
+
+	fmt.Println("Delete blog  client was called")
+
+	req := &blogpb.DeleteBlogRequest{BlogId: blogId}
+
+	res, err := c.DeleteBlog(context.Background(), req)
+
+	if err != nil {
+		log.Fatalf("Error occured when deleting blog %v\n", err)
+	}
+
+	fmt.Printf("Successfully deleted blog %v\n", res)
 }
 
 func updateBlog(c blogpb.BlogServiceClient) {

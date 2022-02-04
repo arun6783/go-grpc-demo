@@ -33,6 +33,32 @@ type blogItem struct {
 	Title    string             `bson:"title"`
 }
 
+func (*server) DeleteBlog(ctx context.Context, req *blogpb.DeleteBlogRequest) (*blogpb.DeleteBlogResponse, error) {
+
+	blogId := req.GetBlogId()
+
+	fmt.Printf("Delete blog method was called with blogid %v\n", blogId)
+
+	oid, err := primitive.ObjectIDFromHex(blogId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "InvalidArgument -  Error converting blogid")
+	}
+
+	filter := bson.D{{"_id", oid}}
+
+	res, delErr := Collection.DeleteOne(context.Background(), filter)
+
+	if delErr != nil {
+		return nil, status.Errorf(codes.Internal, "cannot delete record from db %v", delErr)
+	}
+	if res.DeletedCount == 0 {
+		return nil, status.Errorf(codes.NotFound, "Cannot find blog in db %v", delErr)
+	}
+	fmt.Printf("Delete blog was successful %v", blogId)
+
+	return &blogpb.DeleteBlogResponse{BlogId: blogId}, nil
+}
+
 func (*server) UpdateBlog(ctx context.Context, req *blogpb.UpdateBlogRequest) (*blogpb.UpdateBlogResponse, error) {
 	blog := req.GetBlog()
 
