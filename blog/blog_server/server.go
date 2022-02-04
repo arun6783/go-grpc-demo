@@ -9,6 +9,7 @@ import (
 	"os/signal"
 
 	"github.com/arun6783/go-grpc-demo/blog/blogpb"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -30,6 +31,31 @@ type blogItem struct {
 	AuthorID string             `bson:"author_id"`
 	Content  string             `bson:"content"`
 	Title    string             `bson:"title"`
+}
+
+func (*server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*blogpb.ReadBlogResponse, error) {
+
+	blogId := req.GetBlogId()
+
+	fmt.Printf("Read blog method was called with blogid %v\n", blogId)
+
+	oid, err := primitive.ObjectIDFromHex(blogId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "InvalidArgument -  Error converting blogid")
+	}
+
+	data := &blogItem{}
+
+	filter := bson.D{{"_id", oid}}
+
+	res := Collection.FindOne(context.Background(), filter)
+
+	if err := res.Decode(data); err != nil {
+		return nil, status.Errorf(codes.NotFound, "cannot fund blog with specified id %v", oid)
+	}
+	return &blogpb.ReadBlogResponse{
+		Blog: &blogpb.Blog{Id: blogId, AuthorId: data.AuthorID, Title: data.Title, Content: data.Content},
+	}, nil
 }
 
 func (*server) CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) (*blogpb.CreateBlogResponse, error) {

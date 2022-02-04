@@ -14,6 +14,8 @@ message Blog{
 
 service BlogService{
     rpc CreateBlog(CreateBlogRequest) returns (CreateBlogResponse){};
+    //returns NOT_FOUND if item is not found
+    rpc ReadBlog(ReadBlogRequest) returns (ReadBlogResponse){}; 
 }
 
 message CreateBlogRequest{
@@ -22,4 +24,12 @@ message CreateBlogRequest{
 
 message CreateBlogResponse{
     Blog blog = 1; //will have the blog_id generated
+}
+
+message ReadBlogRequest{
+    string blog_id =1;
+}
+
+message ReadBlogResponse{
+    Blog blog=1;
 }
