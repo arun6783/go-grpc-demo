@@ -13,6 +13,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var (
@@ -30,22 +32,39 @@ type blogItem struct {
 	Title    string             `bson:"title"`
 }
 
+func (*server) CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) (*blogpb.CreateBlogResponse, error) {
+	blog := req.GetBlog()
+
+	fmt.Printf("Create blog method was called with %v\n", blog)
+
+	data := blogItem{
+		AuthorID: blog.GetAuthorId(),
+		Title:    blog.GetTitle(),
+		Content:  blog.GetContent(),
+	}
+
+	res, err := Collection.InsertOne(context.Background(), data)
+
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "InternalError occured when trying to insert data in to db%v\n", err)
+	}
+
+	oid, ok := res.InsertedID.(primitive.ObjectID)
+
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "InternalError cannot convert to oid")
+	}
+	fmt.Printf("New blog post created")
+	return &blogpb.CreateBlogResponse{
+		Blog: &blogpb.Blog{Id: oid.Hex(), Title: blog.GetTitle(), Content: blog.GetContent(), AuthorId: blog.GetAuthorId()},
+	}, nil
+}
+
 func main() {
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	fmt.Print("Hello world!! blog server started in .go\n")
-
-	// client, merr := mongo.NewClient("mongodb://admin:pass@localhost:27017")
-	// if merr != nil {
-	// 	log.Fatalf("Error occured when connecting to mongo server%v\n", merr)
-	// }
-
-	// clientErr := client.Connect(context.TODO())
-	// if clientErr != nil {
-	// 	log.Fatalf("Mongo Error occured when connecting to todo context%v\n", clientErr)
-
-	// }
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://admin:pass@localhost:27017"))
 	if err != nil {
