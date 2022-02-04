@@ -7,6 +7,8 @@ import (
 	"github.com/arun6783/go-grpc-demo/blog/blogpb"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -21,11 +23,42 @@ func main() {
 	defer conn.Close()
 	c := blogpb.NewBlogServiceClient(conn)
 
-	postBlog(c)
+	//postBlog(c)
 	//readBlog(c, "61fd6ef6318a346e9ae3ce84")
+
+	updateBlog(c)
 
 }
 
+func updateBlog(c blogpb.BlogServiceClient) {
+
+	fmt.Println("Update blog  client was called")
+
+	req := &blogpb.UpdateBlogRequest{
+		Blog: &blogpb.Blog{Id: "61fd6ef6318a346e9ae3ce84",
+			AuthorId: "Arun", Title: "first blog post updated", Content: "This is the updated content!!!!!",
+		},
+	}
+
+	res, err := c.UpdateBlog(context.Background(), req)
+	if err != nil {
+		fmt.Printf("Update blog error %v\n\n", err)
+		st, ok := status.FromError(err)
+		if ok {
+			// Error was  a status error
+			if st.Code() == codes.NotFound {
+				fmt.Printf("cannot find blog . response from server - %v\n", st.Message())
+
+			}
+		} else {
+			fmt.Printf("error converting update blog error to status error %v\n", err)
+		}
+	}
+	if res != nil {
+		fmt.Printf("Response from update blog!!! %v\n", res)
+	}
+
+}
 func readBlog(c blogpb.BlogServiceClient, blogId string) {
 
 	fmt.Println("Read blog  client was called")

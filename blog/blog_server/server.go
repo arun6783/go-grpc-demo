@@ -33,6 +33,43 @@ type blogItem struct {
 	Title    string             `bson:"title"`
 }
 
+func (*server) UpdateBlog(ctx context.Context, req *blogpb.UpdateBlogRequest) (*blogpb.UpdateBlogResponse, error) {
+	blog := req.GetBlog()
+
+	fmt.Printf("Update blog method was called with %v\n", blog)
+
+	data := blogItem{
+		AuthorID: blog.GetAuthorId(),
+		Title:    blog.GetTitle(),
+		Content:  blog.GetContent(),
+	}
+
+	oid, err := primitive.ObjectIDFromHex(blog.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "InvalidArgument -  Error converting blogid")
+	}
+
+	filter := bson.D{{"_id", oid}}
+	update := bson.D{{"$set", bson.D{{"author_id", data.AuthorID}, {"Title", "data.Title"}, {"content", data.Content}}}}
+
+	res, err := Collection.UpdateOne(context.Background(), filter, update)
+
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "InternalError occured when trying to update data in to db%v\n", err)
+	}
+
+	if res.MatchedCount == 0 {
+		fmt.Println("No records found to update")
+		return nil, status.Errorf(codes.NotFound, "NotFound cannot match item to update with given blog id %v\n", blog.GetId())
+	}
+	fmt.Printf("Documents matched: %v\n", res.MatchedCount)
+	fmt.Printf("Documents updated: %v\n", res.ModifiedCount)
+
+	return &blogpb.UpdateBlogResponse{
+		Blog: &blogpb.Blog{Id: blog.GetId(), Title: blog.GetTitle(), Content: blog.GetContent(), AuthorId: blog.GetAuthorId()},
+	}, nil
+}
+
 func (*server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*blogpb.ReadBlogResponse, error) {
 
 	blogId := req.GetBlogId()
